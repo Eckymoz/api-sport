@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use App\Repository\SportRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: SportRepository::class)]
 class Sport
@@ -14,6 +15,7 @@ class Sport
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: "Le nom du sport est obligatoire")]
     private ?string $name = null;
 
     public function getId(): ?int
