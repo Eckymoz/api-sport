@@ -2,46 +2,50 @@
 
 namespace App\Tests\Controller;
 
+use App\DataFixtures\SportFixtures;
+use App\DataFixtures\UserFixtures;
 use App\Entity\Sport;
+use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\EntityRepository;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+
 
 class SportControllerTest extends WebTestCase
 {
     private KernelBrowser $client;
     private EntityManagerInterface $manager;
-    private EntityRepository $repository;
+    private UserPasswordHasherInterface $userPasswordHasher;
 
     protected function setUp(): void
     {
-        $this->client = static::createClient();
+        $this->client  = static::createClient();
         $this->manager = static::getContainer()->get('doctrine')->getManager();
-        $this->repository = $this->manager->getRepository(Sport::class);
 
-        foreach ($this->repository->findAll() as $object) {
-            $this->manager->remove($object);
-        }
+        $fixtureSport = new SportFixtures();
+        $fixtureSport->load($this->manager);
 
-        $this->manager->flush();
+        $userRepository = static::getContainer()->get(UserRepository::class);
+        $testUser       = $userRepository->findOneByEmail('user@bookapi.com');
+
+        $this->client->loginUser($testUser);
     }
 
     public function testIndex(): void
     {
         $client = $this->client;
 
-        $newSport = new Sport();
-        $newSport->setName('Nouveau sport');
-
-        $entityManager = static::getContainer()->get('doctrine')->getManager();
-        $entityManager->persist($newSport);
-        $entityManager->flush();
-
         $client->request('GET', '/api/sports');
 
         $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
+        $this->assertJson($client->getResponse()->getContent());
+
+        $responseData = json_decode($client->getResponse()->getContent(), true);
+
+        $this->assertIsArray($responseData);
+        $this->assertNotEmpty($responseData);
     }
 
     public function testNew(): void

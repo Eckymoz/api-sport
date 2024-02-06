@@ -18,11 +18,18 @@ class SportController extends AbstractController
     #[Route('/api/sports', name: 'sport', methods: ['GET'])]
     public function index(SportRepository $sportRepository, SerializerInterface $serializer): JsonResponse
     {
-        $sports = $sportRepository->findAll();
+        try {
 
-        $jsonSports = $serializer->serialize($sports, 'json');
+            $sports = $sportRepository->findAll();
 
-        return $this->json($jsonSports, Response::HTTP_OK);
+            $jsonSports = $serializer->serialize($sports, 'json');
+
+            return new JsonResponse($jsonSports, Response::HTTP_OK, [], true);
+
+        } catch (\Exception $e) {
+            return new JsonResponse(['error_message' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+
     }
 
     #[Route('/api/sports/new', name: 'createSport', methods: ['POST'])]
@@ -49,23 +56,34 @@ class SportController extends AbstractController
     #[Route('/api/sports/{id}', name: "updateSport", methods: ['PUT'])]
     public function update(Request $request, SerializerInterface $serializer, Sport $currentSport, EntityManagerInterface $entityManager): JsonResponse
     {
-        $updatedSport = $serializer->deserialize($request->getContent(),
-            Sport::class,
-            'json',
-            [AbstractNormalizer::OBJECT_TO_POPULATE => $currentSport]);
+        try {
+            $updatedSport = $serializer->deserialize($request->getContent(),
+                Sport::class,
+                'json',
+                [AbstractNormalizer::OBJECT_TO_POPULATE => $currentSport]);
 
-        $entityManager->persist($updatedSport);
-        $entityManager->flush();
+            $entityManager->persist($updatedSport);
+            $entityManager->flush();
 
-        return new JsonResponse(null, Response::HTTP_NO_CONTENT);
+            return new JsonResponse(null, Response::HTTP_NO_CONTENT);
+        } catch (\Exception $e) {
+            return new JsonResponse(['error_message' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+
     }
 
     #[Route('/api/sports/{id}', name: 'deleteSport', methods: ['DELETE'])]
-    public function delete(Request $request, Sport $sport, EntityManagerInterface $entityManager): JsonResponse
+    public function delete(Sport $sport, EntityManagerInterface $entityManager): JsonResponse
     {
-        $entityManager->remove($sport);
-        $entityManager->flush();
+        try {
+            $entityManager->remove($sport);
+            $entityManager->flush();
 
-        return new JsonResponse(null, Response::HTTP_NO_CONTENT);
+            return new JsonResponse(null, Response::HTTP_NO_CONTENT);
+
+        } catch (\Exception $e) {
+            return new JsonResponse(['error_message' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+
     }
 }
