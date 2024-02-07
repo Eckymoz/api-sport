@@ -6,6 +6,7 @@ use App\DataFixtures\SportFixtures;
 use App\DataFixtures\UserFixtures;
 use App\Entity\Sport;
 use App\Repository\UserRepository;
+use Doctrine\Common\DataFixtures\Purger\ORMPurger;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -23,14 +24,31 @@ class SportControllerTest extends WebTestCase
     {
         $this->client  = static::createClient();
         $this->manager = static::getContainer()->get('doctrine')->getManager();
+        $this->userPasswordHasher = static::getContainer()->get('security.password_hasher');
+
+        $this->loadFixtures();
+    }
+
+    private function loadFixtures(): void
+    {
+        $this->purgeDatabase();
 
         $fixtureSport = new SportFixtures();
         $fixtureSport->load($this->manager);
 
+        $fixtureUser = new UserFixtures($this->userPasswordHasher);
+        $fixtureUser->load($this->manager);
+
         $userRepository = static::getContainer()->get(UserRepository::class);
-        $testUser       = $userRepository->findOneByEmail('user@bookapi.com');
+        $testUser       = $userRepository->findOneByEmail('user@sportapi.com');
 
         $this->client->loginUser($testUser);
+    }
+
+    private function purgeDatabase(): void
+    {
+        $purger = new ORMPurger($this->manager);
+        $purger->purge();
     }
 
     public function testIndex(): void
@@ -46,6 +64,7 @@ class SportControllerTest extends WebTestCase
 
         $this->assertIsArray($responseData);
         $this->assertNotEmpty($responseData);
+
     }
 
     public function testNew(): void
@@ -69,12 +88,8 @@ class SportControllerTest extends WebTestCase
     {
         $client = $this->client;
 
-        $sportToUpdate = new Sport();
-        $sportToUpdate->setName('Sport à mettre à jour');
-
-        $entityManager = static::getContainer()->get('doctrine')->getManager();
-        $entityManager->persist($sportToUpdate);
-        $entityManager->flush();
+        $sportRepository = $this->manager->getRepository(Sport::class);
+        $sportToUpdate = $sportRepository->findOneBy([], ['id' => 'DESC']);
 
         $client->request(
             'PUT',
@@ -83,7 +98,7 @@ class SportControllerTest extends WebTestCase
 
         $this->assertEquals(Response::HTTP_NO_CONTENT, $client->getResponse()->getStatusCode());
 
-        $updatedSport = $entityManager->getRepository(Sport::class)->find($sportToUpdate->getId());
+        $updatedSport = $this->manager->getRepository(Sport::class)->find($sportToUpdate->getId());
         $this->assertEquals('Sport mis à jour', $updatedSport->getName());
     }
 
@@ -91,12 +106,8 @@ class SportControllerTest extends WebTestCase
     {
         $client = $this->client;
 
-        $sportToDelete = new Sport();
-        $sportToDelete->setName('Sport à supprimer');
-
-        $entityManager = static::getContainer()->get('doctrine')->getManager();
-        $entityManager->persist($sportToDelete);
-        $entityManager->flush();
+        $sportRepository = $this->manager->getRepository(Sport::class);
+        $sportToDelete = $sportRepository->findOneBy([], ['id' => 'DESC']);
 
         $client->request('DELETE', '/api/sports/' . $sportToDelete->getId());
 
