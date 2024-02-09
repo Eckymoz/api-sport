@@ -51,7 +51,7 @@ class SportControllerTest extends WebTestCase
         $purger->purge();
     }
 
-    public function test_should_list_sports_names(): void
+    public function testShouldListSportsNames(): void
     {
         $client = $this->client;
 
@@ -67,7 +67,7 @@ class SportControllerTest extends WebTestCase
 
     }
 
-    public function test_should_create_new_sport(): void
+    public function testShouldCreateNewSport(): void
     {
         $client = $this->client;
 
@@ -83,7 +83,7 @@ class SportControllerTest extends WebTestCase
         $this->assertArrayNotHasKey('error_message', $responseData);
     }
 
-    public function test_should_not_create_new_sport_with_null_name(): void
+    public function testShouldNotCreateNewSportWithNullName(): void
     {
         $client = $this->client;
 
@@ -101,7 +101,7 @@ class SportControllerTest extends WebTestCase
         $this->assertEquals('Le nom du sport est obligatoire', $responseData['violations'][0]['title']);
     }
 
-    public function test_should_fail_if_name_already_exist(): void
+    public function testShouldNotCreateNewSportIfNameAlreadyExist(): void
     {
         $client = $this->client;
 
@@ -122,7 +122,7 @@ class SportControllerTest extends WebTestCase
         $this->assertEquals('Ce nom de sport est déjà pris', $responseData['violations'][0]['title']);
     }
 
-    public function test_should_edit_sport(): void
+    public function testShouldEditSport(): void
     {
         $client          = $this->client;
         $sportRepository = $this->manager->getRepository(Sport::class);
@@ -139,19 +139,19 @@ class SportControllerTest extends WebTestCase
         $this->assertEquals('Sport mis à jour', $updatedSport->getName());
     }
 
-    public function test_should_fail_edit_non_existent_sport(): void
+    public function testShouldNotEditNonExistentSport(): void
     {
         $client = $this->client;
 
         $client->request(
             'PUT',
-            '/api/sports/0', [], [], ['CONTENT_TYPE' => 'application/json'],
+            '/api/sports/0', [], [], ['CONTENTTYPE' => 'application/json'],
             '{"name": "Sport mis à jour"}'
         );
 
         $this->assertEquals(Response::HTTP_NOT_FOUND, $client->getResponse()->getStatusCode());
     }
-    public function test_should_remove_sport(): void
+    public function testShouldRemoveSport(): void
     {
         $client          = $this->client;
         $sportRepository = $this->manager->getRepository(Sport::class);
@@ -161,7 +161,7 @@ class SportControllerTest extends WebTestCase
 
         $this->assertEquals(Response::HTTP_NO_CONTENT, $client->getResponse()->getStatusCode());
     }
-    public function test_should_not_remove_sport_with_wrong_id(): void
+    public function testShouldNotRemoveSportWithWrongId(): void
     {
         $client = $this->client;
 
